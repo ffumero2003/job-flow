@@ -7,61 +7,43 @@ import {
   useState,
 } from "react";
 
-// ============================================================
-// CONSTANTS
-// ============================================================
-
+/* ============================================================
+   CONSTANTS
+   
+   Single source of truth for the localStorage key.
+   If you ever need to change it, only change it here.
+   ============================================================ */
 const STORAGE_KEY = "jobflow_applications";
 
-// ============================================================
-// INITIAL STATE
-// ============================================================
-
+/* ============================================================
+   INITIAL STATE
+   
+   What the app state looks like before any data loads.
+   isLoading prevents saving an empty array to localStorage
+   before we've had a chance to load existing data.
+   ============================================================ */
 const initialState = {
   applications: [],
   isLoading: true,
 };
 
-// In the useEffect that loads data, temporarily replace with:
-// const initialState = {
-//   applications: [
-//     {
-//       id: "1",
-//       company: "Google",
-//       role: "Frontend Dev",
-//       status: "pending",
-//       dateApplied: "2026-01-20",
-//       createdAt: Date.now(),
-//       updatedAt: Date.now(),
-//     },
-//     {
-//       id: "2",
-//       company: "Meta",
-//       role: "React Engineer",
-//       status: "interview",
-//       dateApplied: "2026-01-18",
-//       createdAt: Date.now(),
-//       updatedAt: Date.now(),
-//     },
-//     {
-//       id: "3",
-//       company: "Amazon",
-//       role: "SDE",
-//       status: "rejected",
-//       dateApplied: "2026-01-15",
-//       createdAt: Date.now(),
-//       updatedAt: Date.now(),
-//     },
-//   ],
-//   isLoading: false,
-// };
-
-// ============================================================
-// REDUCER
-// ============================================================
-
+/* ============================================================
+   REDUCER
+   
+   Pure function that takes current state + action, returns new state.
+   Never mutates the original state — always returns a new object.
+   
+   Why a reducer instead of useState?
+   - Multiple related values (applications, isLoading)
+   - Complex update logic (find by ID, filter, etc.)
+   - Easier to debug (log actions)
+   - Predictable state transitions
+   ============================================================ */
 function appReducer(state, action) {
   switch (action.type) {
+    /* LOAD_DATA
+       Called once on mount after reading from localStorage.
+       Sets applications array and marks loading complete. */
     case "LOAD_DATA":
       return {
         ...state,
@@ -69,12 +51,18 @@ function appReducer(state, action) {
         isLoading: false,
       };
 
+    /* ADD_APPLICATION
+       Adds new app to the START of the array.
+       Why start? So newest appears first in the table. */
     case "ADD_APPLICATION":
       return {
         ...state,
         applications: [action.payload, ...state.applications],
       };
 
+    /* UPDATE_APPLICATION
+       Finds app by ID and merges in new data.
+       Also updates the updatedAt timestamp. */
     case "UPDATE_APPLICATION":
       return {
         ...state,
@@ -85,6 +73,8 @@ function appReducer(state, action) {
         ),
       };
 
+    /* DELETE_APPLICATION
+       Filters out the app with matching ID. */
     case "DELETE_APPLICATION":
       return {
         ...state,
@@ -93,32 +83,45 @@ function appReducer(state, action) {
         ),
       };
 
+    /* Default: return unchanged state for unknown actions */
     default:
       return state;
   }
 }
 
-// ============================================================
-// CONTEXT
-// ============================================================
-
+/* ============================================================
+   CONTEXT
+   
+   React Context allows passing data through the component tree
+   without manually passing props at every level.
+   ============================================================ */
 const AppContext = createContext(null);
 
-// ============================================================
-// PROVIDER COMPONENT
-// ============================================================
-
+/* ============================================================
+   PROVIDER COMPONENT
+   
+   Wraps the app and provides state + actions to all children.
+   Any component can access this via useApp() hook.
+   ============================================================ */
 export function AppProvider({ children }) {
+  /* useReducer: Like useState but for complex state logic.
+     Returns [currentState, dispatchFunction] */
   const [state, dispatch] = useReducer(appReducer, initialState);
+
+  /* Toast state: Separate from reducer because it's UI-only,
+     doesn't need to persist, and has different lifecycle */
   const [toast, setToast] = useState(null);
 
-  // Load from localStorage on mount
+  /* --------------------------------------------------------
+     LOAD FROM LOCALSTORAGE
+     
+     Runs once on mount (empty dependency array).
+     Tries to parse stored JSON, falls back to empty array.
+     -------------------------------------------------------- */
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       const data = stored ? JSON.parse(stored) : [];
-      // const data = stored ? JSON.parse(stored) : initialState.applications;
-
       dispatch({ type: "LOAD_DATA", payload: data });
     } catch (error) {
       console.error("Failed to load data from localStorage:", error);
@@ -126,7 +129,13 @@ export function AppProvider({ children }) {
     }
   }, []);
 
-  // Save to localStorage whenever applications change
+  /* --------------------------------------------------------
+     SAVE TO LOCALSTORAGE
+     
+     Runs whenever applications array changes.
+     The isLoading check prevents saving empty array before
+     initial load completes.
+     -------------------------------------------------------- */
   useEffect(() => {
     if (!state.isLoading) {
       try {
@@ -137,13 +146,26 @@ export function AppProvider({ children }) {
     }
   }, [state.applications, state.isLoading]);
 
-  // Toast notification helper
+  /* --------------------------------------------------------
+     TOAST HELPER
+     
+     Shows a notification that auto-dismisses after 3 seconds.
+     useCallback memoizes the function to prevent unnecessary
+     re-renders of components that depend on it.
+     -------------------------------------------------------- */
   const showToast = useCallback((message, type = "success") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   }, []);
 
-  // Add a new application
+  /* --------------------------------------------------------
+     ADD APPLICATION
+     
+     Creates a new application object with:
+     - Generated UUID for unique identification
+     - User-provided data spread in
+     - Timestamps for tracking
+     -------------------------------------------------------- */
   const addApplication = useCallback(
     (data) => {
       const newApp = {
@@ -165,7 +187,12 @@ export function AppProvider({ children }) {
     [showToast],
   );
 
-  // Update an existing application
+  /* --------------------------------------------------------
+     UPDATE APPLICATION
+     
+     Dispatches update with ID and new data.
+     Reducer handles finding the right app and merging.
+     -------------------------------------------------------- */
   const updateApplication = useCallback(
     (id, data) => {
       dispatch({ type: "UPDATE_APPLICATION", payload: { id, ...data } });
@@ -174,7 +201,12 @@ export function AppProvider({ children }) {
     [showToast],
   );
 
-  // Delete an application
+  /* --------------------------------------------------------
+     DELETE APPLICATION
+     
+     Dispatches delete with just the ID.
+     Reducer handles filtering it out.
+     -------------------------------------------------------- */
   const deleteApplication = useCallback(
     (id) => {
       dispatch({ type: "DELETE_APPLICATION", payload: id });
@@ -183,14 +215,19 @@ export function AppProvider({ children }) {
     [showToast],
   );
 
-  // Context value
+  /* --------------------------------------------------------
+     CONTEXT VALUE
+     
+     Everything that child components can access.
+     Organized into State and Actions for clarity.
+     -------------------------------------------------------- */
   const value = {
-    // State
+    // State (read-only for consumers)
     applications: state.applications,
     isLoading: state.isLoading,
     toast,
 
-    // Actions
+    // Actions (functions to modify state)
     addApplication,
     updateApplication,
     deleteApplication,
@@ -200,10 +237,12 @@ export function AppProvider({ children }) {
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
 
-// ============================================================
-// CUSTOM HOOK
-// ============================================================
-
+/* ============================================================
+   CUSTOM HOOK
+   
+   Provides a clean API for components to access context.
+   Also adds error handling if used outside Provider.
+   ============================================================ */
 export function useApp() {
   const context = useContext(AppContext);
   if (!context) {

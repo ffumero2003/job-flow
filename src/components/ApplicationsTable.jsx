@@ -1,30 +1,11 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { formatDate } from "../utils/dateUtils";
 
 export function ApplicationsTable({ onEdit }) {
   const { applications, updateApplication, deleteApplication } = useApp();
-  const [sortField, setSortField] = useState("createdAt");
-  const [sortDir, setSortDir] = useState("desc");
+
   const [newId, setNewId] = useState(null);
-
-  // Sort applications
-  const sorted = useMemo(() => {
-    return [...applications].sort((a, b) => {
-      let aVal = a[sortField];
-      let bVal = b[sortField];
-
-      // Handle string comparison for company/role
-      if (sortField === "company" || sortField === "role") {
-        aVal = aVal?.toLowerCase() || "";
-        bVal = bVal?.toLowerCase() || "";
-      }
-
-      if (aVal < bVal) return sortDir === "asc" ? -1 : 1;
-      if (aVal > bVal) return sortDir === "asc" ? 1 : -1;
-      return 0;
-    });
-  }, [applications, sortField, sortDir]);
 
   // Highlight newly added rows
   useEffect(() => {
@@ -37,16 +18,6 @@ export function ApplicationsTable({ onEdit }) {
     }
   }, [applications]);
 
-  // Handle column sorting
-  const handleSort = (field) => {
-    if (sortField === field) {
-      setSortDir(sortDir === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortDir("asc");
-    }
-  };
-
   // Handle inline status change
   const handleStatusChange = (id, newStatus) => {
     updateApplication(id, { status: newStatus });
@@ -58,13 +29,6 @@ export function ApplicationsTable({ onEdit }) {
       deleteApplication(id);
     }
   };
-
-  // Sort indicator component
-  const SortIcon = ({ field }) => (
-    <span className="ml-1 text-stone/50">
-      {sortField === field ? (sortDir === "asc" ? "↑" : "↓") : ""}
-    </span>
-  );
 
   // Empty state
   if (applications.length === 0) {
@@ -87,29 +51,17 @@ export function ApplicationsTable({ onEdit }) {
         <table className="w-full">
           <thead className="bg-smoke/50">
             <tr>
-              <th
-                className="px-6 py-4 text-left text-sm font-semibold text-stone cursor-pointer hover:text-ink transition-colors"
-                onClick={() => handleSort("company")}
-              >
-                Company <SortIcon field="company" />
+              <th className="px-6 py-4 text-left text-sm font-semibold text-stone">
+                Company
               </th>
-              <th
-                className="px-6 py-4 text-left text-sm font-semibold text-stone cursor-pointer hover:text-ink transition-colors"
-                onClick={() => handleSort("role")}
-              >
-                Role <SortIcon field="role" />
+              <th className="px-6 py-4 text-left text-sm font-semibold text-stone">
+                Role
               </th>
-              <th
-                className="px-6 py-4 text-left text-sm font-semibold text-stone cursor-pointer hover:text-ink transition-colors"
-                onClick={() => handleSort("status")}
-              >
-                Status <SortIcon field="status" />
+              <th className="px-6 py-4 text-left text-sm font-semibold text-stone">
+                Status
               </th>
-              <th
-                className="px-6 py-4 text-left text-sm font-semibold text-stone cursor-pointer hover:text-ink transition-colors"
-                onClick={() => handleSort("dateApplied")}
-              >
-                Applied <SortIcon field="dateApplied" />
+              <th className="px-6 py-4 text-left text-sm font-semibold text-stone">
+                Applied
               </th>
               <th className="px-6 py-4 text-right text-sm font-semibold text-stone">
                 Actions
@@ -117,7 +69,7 @@ export function ApplicationsTable({ onEdit }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-smoke">
-            {sorted.map((app) => (
+            {applications.map((app) => (
               <tr
                 key={app.id}
                 className={`hover:bg-smoke/30 transition-colors ${

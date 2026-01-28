@@ -183,7 +183,6 @@ export function Dashboard() {
 // │   ├── InsightsPanel.jsx
 // │   ├── KPICards.jsx
 // │   ├── PipelineHealth.jsx
-// │   ├── StatusBadge.jsx
 // │   ├── Toast.jsx
 // │   └── UpcomingInterviewsWidget.jsx
 // ├── context/
