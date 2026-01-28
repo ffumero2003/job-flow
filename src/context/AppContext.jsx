@@ -22,6 +22,40 @@ const initialState = {
   isLoading: true,
 };
 
+// In the useEffect that loads data, temporarily replace with:
+// const initialState = {
+//   applications: [
+//     {
+//       id: "1",
+//       company: "Google",
+//       role: "Frontend Dev",
+//       status: "pending",
+//       dateApplied: "2026-01-20",
+//       createdAt: Date.now(),
+//       updatedAt: Date.now(),
+//     },
+//     {
+//       id: "2",
+//       company: "Meta",
+//       role: "React Engineer",
+//       status: "interview",
+//       dateApplied: "2026-01-18",
+//       createdAt: Date.now(),
+//       updatedAt: Date.now(),
+//     },
+//     {
+//       id: "3",
+//       company: "Amazon",
+//       role: "SDE",
+//       status: "rejected",
+//       dateApplied: "2026-01-15",
+//       createdAt: Date.now(),
+//       updatedAt: Date.now(),
+//     },
+//   ],
+//   isLoading: false,
+// };
+
 // ============================================================
 // REDUCER
 // ============================================================
@@ -83,6 +117,8 @@ export function AppProvider({ children }) {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       const data = stored ? JSON.parse(stored) : [];
+      // const data = stored ? JSON.parse(stored) : initialState.applications;
+
       dispatch({ type: "LOAD_DATA", payload: data });
     } catch (error) {
       console.error("Failed to load data from localStorage:", error);
