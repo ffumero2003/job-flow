@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+/* Base styles */
+body {
+  font-family: "DM Sans", system-ui, sans-serif;
+  background-color: #fafaf9;
+  min-height: 100vh;
+}
+
+/* Row highlight animation for new entries */
+@keyframes highlightRow {
+  0% {
+    background-color: #dbeafe;
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.highlight-new {
+  animation: highlightRow 2s ease-out;
+}
